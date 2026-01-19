@@ -1,3 +1,4 @@
+
 # G7-Vision-AI
 
 ## 📌 Mô tả
@@ -20,4 +21,7 @@ Fuzzy Logic chỉ kích hoạt khi ảnh mờ / chất lượng thấp.
 - Integration: Quang Tú
 
 ## 🚀 Cách chạy 
+
+
+
 
