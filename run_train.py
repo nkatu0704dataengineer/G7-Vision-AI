@@ -1,17 +1,19 @@
 # run_train.py
-import cv2
+from cnn.train import train
 from cnn.extract_feature import extract_feature
+import cv2
+import os
 
-# Test với ảnh file
-img = cv2.imread("test.jpg")
-feature = extract_feature(img)
-print("Feature shape:", feature.shape)
+if __name__ == "__main__":
+    # 1. Train nếu chưa có model
+    if not os.path.exists("face_cnn.pth"):
+        print("Training model...")
+        train()
 
-# Test camera (optional)
-cap = cv2.VideoCapture(0)
-ret, frame = cap.read()
-if ret:
-    feature_cam = extract_feature(frame)
-    print("Camera feature shape:", feature_cam.shape)
-
-cap.release()
+    # 2. Test inference với ảnh
+    img = cv2.imread("test.jpg")
+    if img is not None:
+        feature = extract_feature(img)
+        print("Feature shape:", feature.shape)
+    else:
+        print("Không tìm thấy test.jpg")

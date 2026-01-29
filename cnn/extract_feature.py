@@ -1,45 +1,32 @@
-# cnn/extract_feature.py
 import torch
-import numpy as np
-from torchvision import transforms
-from PIL import Image
-import cv2
-
+import os
 from cnn.model import FaceCNN
-from cnn.config import Config
-
+from cnn.config import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Load model
-model = FaceCNN(
-    embedding_dim=Config.EMBEDDING_DIM,
-    num_classes=Config.NUM_CLASSES
-)
-model.load_state_dict(torch.load("face_cnn.pth", map_location=device))
-model.to(device)
-model.eval()
 
-transform = transforms.Compose([
-    transforms.Resize((Config.IMAGE_SIZE, Config.IMAGE_SIZE)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.5]*3, std=[0.5]*3)
-])
+def load_model(weight_path="face_cnn.pth"):
+    if not os.path.exists(weight_path):
+        raise FileNotFoundError(
+            "Model chưa được train. Hãy train trước để tạo face_cnn.pth"
+        )
+
+    model = FaceCNN().to(device)
+    model.load_state_dict(torch.load(weight_path, map_location=device))
+    model.eval()
+    return model
 
 
-def extract_feature(image):
+def extract_feature(image, model=None):
     """
-    input: image (PIL.Image or OpenCV image)
-    output: 1D numpy array (embedding)
+    input: ảnh (PIL hoặc OpenCV)
+    output: vector embedding
     """
-
-    if isinstance(image, np.ndarray):
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = Image.fromarray(image)
-
-    image = transform(image).unsqueeze(0).to(device)
+    if model is None:
+        model = load_model()
 
     with torch.no_grad():
-        embedding = model(image, return_embedding=True)
+        embedding = model(image)
 
-    return embedding.cpu().numpy().flatten()
+    return embedding
