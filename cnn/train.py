@@ -1,3 +1,4 @@
+#cnn/train.py
 import torch
 import torch.optim as optim
 import torch.nn as nn
@@ -11,25 +12,25 @@ def train_model(train_loader, val_loader):
     device = torch.device(Config.DEVICE)
     model = FaceCNN(Config.EMBEDDING_DIM, Config.NUM_CLASSES).to(device)
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss()   # Hàm mất mát
     optimizer = optim.Adam(model.parameters(), lr=Config.LR)
 
     for epoch in range(Config.EPOCHS):
         model.train()
         running_loss = 0.0
 
-        for images, labels in train_loader:
+        for images, labels in train_loader:     # Học theo nhóm ảnh
             images, labels = images.to(device), labels.to(device)
 
             optimizer.zero_grad()
             outputs = model(images)
             loss = criterion(outputs, labels)
-            loss.backward()
+            loss.backward() # Học từ sai lầm
             optimizer.step()
 
             running_loss += loss.item()
 
-        print(f"Epoch {epoch+1}/{Config.EPOCHS}, "
+        print(f"Epoch {epoch+1}/{Config.EPOCHS}, " # In kết quả mỗi epoch
               f"Loss: {running_loss/len(train_loader):.4f}")
 
     torch.save(model.state_dict(), Config.MODEL_PATH)
