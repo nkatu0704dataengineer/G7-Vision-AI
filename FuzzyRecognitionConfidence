@@ -5,7 +5,7 @@
 import numpy as np                     # Xử lý mảng số, clip giá trị
 import skfuzzy as fuzz                # Thư viện fuzzy logic
 from skfuzzy import control as ctrl   # Control system cho fuzzy inference
-
+# nhan dien va dau ra do tin cay cua hinh anh
 
 # =============================
 # FUZZY CONFIDENCE CLASS
