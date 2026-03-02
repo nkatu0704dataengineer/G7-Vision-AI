@@ -1,4 +1,3 @@
-import cv2
 import numpy as np
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
@@ -8,132 +7,26 @@ class FuzzyEnhancementModule:
 
     def __init__(self):
 
-        # ==================================================
-        # INPUT VARIABLES
-        # ==================================================
-
-        self.blur = ctrl.Antecedent(np.arange(0, 1001, 1), 'blur')
-        # Độ mờ ảnh (Variance Laplacian)
-
-        self.noise = ctrl.Antecedent(np.arange(0, 51, 1), 'noise')
-        # Mức nhiễu ảnh
-
-        self.contrast = ctrl.Antecedent(np.arange(0, 101, 1), 'contrast')
-        # Độ tương phản ảnh
-
         self.q_score = ctrl.Antecedent(np.arange(0, 101, 1), 'q_score')
-        # Điểm quality từ module fuzzy quality trước
+        self.need = ctrl.Consequent(np.arange(0, 2, 1), 'need')
 
+        self.q_score['low']    = fuzz.trapmf(self.q_score.universe, [0, 0, 40, 55])
+        self.q_score['medium'] = fuzz.trimf(self.q_score.universe, [50, 65, 80])
+        self.q_score['high']   = fuzz.trapmf(self.q_score.universe, [75, 85, 100, 100])
 
-        # ==================================================
-        # OUTPUT VARIABLES
-        # ==================================================
-
-        self.strength = ctrl.Consequent(np.arange(0, 101, 1), 'strength')
-        # Mức độ tăng cường
-
-        self.enh_type = ctrl.Consequent(np.arange(0, 4, 1), 'enh_type')
-        # Loại enhance:
-        # 0 = none
-        # 1 = sharpen
-        # 2 = denoise
-        # 3 = contrast boost
-
-
-        # ==================================================
-        # MEMBERSHIP FUNCTIONS — INPUT
-        # ==================================================
-
-        # -------- BLUR --------
-        self.blur['low'] = fuzz.trapmf(self.blur.universe, [0,0,150,300])
-        self.blur['medium'] = fuzz.trimf(self.blur.universe, [200,500,800])
-        self.blur['high'] = fuzz.trapmf(self.blur.universe, [700,850,1000,1000])
-
-        # -------- NOISE --------
-        self.noise['low'] = fuzz.trapmf(self.noise.universe, [0,0,10,18])
-        self.noise['medium'] = fuzz.trimf(self.noise.universe, [15,25,35])
-        self.noise['high'] = fuzz.trapmf(self.noise.universe, [30,40,50,50])
-
-        # -------- CONTRAST --------
-        self.contrast['low'] = fuzz.trapmf(self.contrast.universe, [0,0,25,40])
-        self.contrast['medium'] = fuzz.trimf(self.contrast.universe, [30,55,80])
-        self.contrast['high'] = fuzz.trapmf(self.contrast.universe, [70,85,100,100])
-
-        # -------- QUALITY SCORE --------
-        self.q_score['low'] = fuzz.trapmf(self.q_score.universe, [0,0,30,45])
-        self.q_score['medium'] = fuzz.trimf(self.q_score.universe, [40,60,75])
-        self.q_score['high'] = fuzz.trapmf(self.q_score.universe, [70,85,100,100])
-
-
-        # ==================================================
-        # MEMBERSHIP FUNCTIONS — OUTPUT
-        # ==================================================
-
-        # -------- STRENGTH --------
-        self.strength['none'] = fuzz.trapmf(self.strength.universe,[0,0,10,20])
-        self.strength['light'] = fuzz.trimf(self.strength.universe,[15,35,55])
-        self.strength['medium'] = fuzz.trimf(self.strength.universe,[50,70,85])
-        self.strength['strong'] = fuzz.trapmf(self.strength.universe,[80,90,100,100])
-
-        # -------- ENHANCEMENT TYPE --------
-        self.enh_type['none'] = fuzz.trimf(self.enh_type.universe,[0,0,1])
-        self.enh_type['sharpen'] = fuzz.trimf(self.enh_type.universe,[0,1,2])
-        self.enh_type['denoise'] = fuzz.trimf(self.enh_type.universe,[1,2,3])
-        self.enh_type['contrast'] = fuzz.trimf(self.enh_type.universe,[2,3,3])
-
-
-        # ==================================================
-        # RULE BASE
-        # ==================================================
+        self.need['no']  = fuzz.trimf(self.need.universe, [0, 0, 1])
+        self.need['yes'] = fuzz.trimf(self.need.universe, [0, 1, 1])
 
         rules = [
-
-            # Blur cao → sharpen mạnh
-            ctrl.Rule(self.blur['high'], self.enh_type['sharpen']),
-            ctrl.Rule(self.blur['high'], self.strength['strong']),
-
-            # Noise cao → denoise mạnh
-            ctrl.Rule(self.noise['high'], self.enh_type['denoise']),
-            ctrl.Rule(self.noise['high'], self.strength['strong']),
-
-            # Contrast thấp → tăng contrast
-            ctrl.Rule(self.contrast['low'], self.enh_type['contrast']),
-            ctrl.Rule(self.contrast['low'], self.strength['medium']),
-
-            # Quality thấp → tăng cường mạnh
-            ctrl.Rule(self.q_score['low'], self.strength['strong']),
-
-            # Quality cao → gần như không cần enhance
-            ctrl.Rule(self.q_score['high'], self.strength['light']),
-            ctrl.Rule(self.q_score['high'], self.enh_type['none']),
-
-            # Blur medium + noise medium → enhance vừa
-            ctrl.Rule(self.blur['medium'] & self.noise['medium'], self.strength['medium'])
+            ctrl.Rule(self.q_score['low'], self.need['yes']),
+            ctrl.Rule(self.q_score['medium'], self.need['yes']),
+            ctrl.Rule(self.q_score['high'], self.need['no']),
         ]
 
+        self.system = ctrl.ControlSystem(rules)
+        self.sim = ctrl.ControlSystemSimulation(self.system)
 
-        # ==================================================
-        # BUILD SYSTEM
-        # ==================================================
-
-        self.ctrl_system = ctrl.ControlSystem(rules)
-        self.simulator = ctrl.ControlSystemSimulation(self.ctrl_system)
-
-
-    # ==================================================
-    # RUN INFERENCE
-    # ==================================================
-
-    def compute_enhancement(self, blur, noise, contrast, q_score):
-
-        self.simulator.input['blur'] = blur
-        self.simulator.input['noise'] = noise
-        self.simulator.input['contrast'] = contrast
-        self.simulator.input['q_score'] = q_score
-
-        self.simulator.compute()
-
-        return {
-            "strength": float(self.simulator.output['strength']),
-            "enhancement_type": float(self.simulator.output['enh_type'])
-        }
+    def need_enhancement(self, q_score):
+        self.sim.input['q_score'] = q_score
+        self.sim.compute()
+        return self.sim.output['need'] > 0.5
