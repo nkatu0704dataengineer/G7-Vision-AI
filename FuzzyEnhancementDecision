@@ -50,7 +50,11 @@ class FuzzyEnhancementModule:
         self.strength['none'] = fuzz.trapmf(self.strength.universe,[0,0,10,20])
         self.strength['light'] = fuzz.trimf(self.strength.universe, [15, 35, 55])
         self.strength['strong'] = fuzz.trapmf(self.strength.universe, [50, 70, 100, 100])
+<<<<<<< HEAD
     rules = [
+=======
+        rules = [
+>>>>>>> 09b3413 (fixFED)
             ctrl.Rule(self.q_score['low'], self.strength['strong']),
             ctrl.Rule(self.q_score['medium'], self.strength['light']),
             ctrl.Rule(self.q_score['high'], self.strength['none'])
